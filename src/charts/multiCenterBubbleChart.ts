@@ -47,6 +47,7 @@ export default class MultiCenterBubbleChart<Datum> {
     displayMode: DisplayMode;
     groups: Map<string, Group>;
     tooltip: Tooltip;
+    groupWidth: number;
 
     constructor(width: number, 
                 height: number, 
@@ -57,6 +58,7 @@ export default class MultiCenterBubbleChart<Datum> {
         this.selectors = selectors;
         this.nodes = [];
 
+        this.displayMode = DisplayMode.Center;
         this.simulation = d3.forceSimulation<Node>()
             .velocityDecay(velocityDecay)            
             .force('x', d3.forceX().strength(forceStrength).x(this.width / 2))
@@ -92,14 +94,16 @@ export default class MultiCenterBubbleChart<Datum> {
     recalculateGroupPositions = () => {        
         const count = this.groups.size;
         if (count) {
-            const span = this.width / (count + 3);
+            this.groupWidth = this.width / (count + 3);
 
-            let x = span * 2; // start with margin
+            let x = this.groupWidth * 2; // start with margin
 
             Array.from(this.groups.values(), group => {
                 group.x = x;
-                x += span;
+                x += this.groupWidth;
             });
+        } else {
+            this.groupWidth = this.width;
         }
     }
 
@@ -142,7 +146,8 @@ export default class MultiCenterBubbleChart<Datum> {
             .attr('x', d => d.x)
             .attr('y', 40)
             .attr('text-anchor', 'middle')
-            .text(d => d.name);
+            .text(d => d.name)
+            .each(this.wrapText(this.groupWidth, 5));
     }
 
     groupBubbles = () => {
@@ -207,17 +212,36 @@ export default class MultiCenterBubbleChart<Datum> {
         }
     }
     
+    wrapText(width: number, padding: number) {
+        return function(group: Group, index: number, groups: d3.BaseType[]) {
+            const self = d3.select(groups[index]);
+            const node = self && self.node() as SVGTextContentElement;
+            if (node) {          
+                let textLength = node.getComputedTextLength();
+                let text = group.name;
+
+                while (textLength > 0 && textLength > (width - 2 * padding)) {
+                    text = text.slice(0, -1);
+                    self.text(text + '...');
+                    textLength = node.getComputedTextLength();
+                }
+            }
+        };
+    }
+
     render = (selection: d3.Selection<d3.BaseType, {}, null, undefined>) => {
         this.svg = selection.append('svg')
             .attr('width', this.width)
             .attr('height', this.height);
 
-        selection.append('div')
-            .append('button')
-                .style('position', 'absolute')
-                .style('top', '5px')
-                .style('right', '0.5em')
-                .on('click', this.toggleDisplay)
+        selection.append('a')
+            .on('click', this.toggleDisplay)
+            .style('cursor', 'pointer')
+            .style('position', 'absolute')
+            .style('top', '5px')
+            .style('right', '0.5em')
+            .append('text')
+                .style('color', '#0078d7')
                 .text('Toggle');
         
         this.bubbles = this.svg.selectAll('.bubble')
