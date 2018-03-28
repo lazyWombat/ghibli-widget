@@ -1,5 +1,6 @@
+import { capitalize } from 'lodash';
 import ResizeSensor from 'css-element-queries/src/ResizeSensor';
-import { Component } from './commonTypes';
+import { Component, WidgetType } from './commonTypes';
 import { Film } from './models/film';
 import LoadingIndicator from './loading';
 import ErrorMessage from './error';
@@ -19,15 +20,23 @@ export default class Widget {
     state: WidgetState;
     prevState: WidgetState;
     content: Component;    
+    type: WidgetType;
 
     constructor(element: Element) {
         this.element = element;
         const server = element.getAttribute('data-server');
+        const dataType = element.getAttribute('data-type');
+        this.type = WidgetType[capitalize(dataType || 'films')] || WidgetType.Invalid;
+
         this.prevState = this.state = { isLoading: false };
         if (server) {
             this.server = server;
-            // this.loadData();
-            this.onError('Test error');
+            if (this.type) {
+                this.loadData();
+            } else {
+                this.onError(`Unknown widget type: ${dataType}`);
+            }
+            
         } else {
             this.onError('Missing data-server attribute');
         }
