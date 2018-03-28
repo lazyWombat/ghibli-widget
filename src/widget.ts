@@ -26,7 +26,8 @@ export default class Widget {
         this.prevState = this.state = { isLoading: false };
         if (server) {
             this.server = server;
-            this.loadData();
+            // this.loadData();
+            this.onError('Test error');
         } else {
             this.onError('Missing data-server attribute');
         }
@@ -66,11 +67,11 @@ export default class Widget {
             if (this.state.isLoading && !this.prevState.isLoading) {
                 this.content = new LoadingIndicator(selection, width, height);
             } else if (this.state.error && !this.prevState.error) {
-                this.content = new ErrorMessage(selection, width, height, this.state.error);
+                this.content = new ErrorMessage(selection, width, height, this.state.error, this.loadData);
             } else if (this.state.data && !this.prevState.data) {
                 this.content = new FilmsGraph(selection, width, height, this.state.data);
             } else if (!this.content) {
-                this.content = new ErrorMessage(selection, width, height, 'unknown error');
+                this.content = new ErrorMessage(selection, width, height, 'unknown error', this.loadData);
             }
 
             if (this.content) {
