@@ -1,8 +1,13 @@
 import * as d3 from 'd3';
+import { range } from 'lodash';
 import { Component } from './commonTypes';
 
 interface Arc { endAngle: number; }
-
+interface Circle { 
+    delay: number;
+    radius: number;
+    color: string;
+}
 export default class LoadingIndicator implements Component {
     selection: d3.Selection<d3.BaseType, {}, null, undefined>;
     width: number;
@@ -37,18 +42,17 @@ export default class LoadingIndicator implements Component {
             });
         setTimeout(() => { this.spin(selection, duration); }, duration);
     }
-        
+
+    getCircle(i: number): Circle {
+        return {
+            delay: i * 100, 
+            color: d3.schemeCategory10[i % d3.schemeCategory10.length],
+            radius: 46 - i * 6
+        };
+    }
+
     render(): void {
-        const tau = 2 * Math.PI;
-        const minRadius = 10;
-        const radius = Math.max(minRadius, Math.min(this.width, this.height) / 2);
-            
-        const arc = d3.arc()
-            .innerRadius(radius * 0.5)
-            .outerRadius(radius * 0.9)
-            .startAngle(0);
-        
-        this.selection.select('svg').remove();
+        this.selection.select('svg').remove();        
         const svg = this.selection
             .style('background', 'white')
             .style('border', '1px solid black')
@@ -58,10 +62,34 @@ export default class LoadingIndicator implements Component {
         .append('g')
             .attr('transform', `translate(${this.width * 0.5}, ${this.height * 0.5})`);
 
-        svg.append('path')
-            .datum<Arc>({endAngle: 0.33 * tau})
-            .style('fill', '#4D4D4D')
-            .attr('d', arc)
-            .call(this.spin, 1500);
+        svg.selectAll('circle')
+        .data(range(3).map(this.getCircle)).enter()
+        .append('circle')
+            .attr('r', d => d.radius)
+            .attr('fill', 'none')
+            .attr('stroke', d => d.color)
+            .attr('stroke-width', 5)
+        .transition()
+            .duration(250)
+            .ease(d3.easeLinear)
+            .delay(d => d.delay)
+            .on('start', function repeat(c: Circle, index: number, circles: d3.BaseType[]) {
+                const circle = d3.active(circles[index]);
+                if (circle) {
+                    const l = c.radius * Math.PI;
+                    circle
+                        .attr('stroke-dasharray', `0 0 0 ${l} 0 ${l}`)
+                    .transition()
+                        .attr('stroke-dasharray', `0 0 ${l} 0 0 ${l}`)
+                    .transition()
+                        .attr('stroke-dasharray', `0 0 ${l} 0 0 ${l}`)
+                    .transition()
+                        .attr('stroke-dasharray', `0 ${l} 0 ${l} 0 ${l}`)
+                    .transition()
+                        .attr('stroke-dasharray', `0 ${l} 0 ${l} 0 ${l}`)
+                    .transition()
+                        .on('start', repeat);
+                }
+            });
     }
 }
