@@ -79,7 +79,7 @@ export default class MultiCenterBubbleChart<Datum> {
     ticked = () => this.bubbles.attr('cx', d => d.x).attr('cy', d => d.y);
 
     getRadiusScale = () => {
-        const maxRadius = Math.max(10, Math.min(this.width, this.height) / 20);
+        const maxRadius = Math.max(10, Math.min(this.width, this.height) / 25);
         return d3.scalePow().exponent(0.5).domain([0, this.maxValue]).range([2, maxRadius]);
     }
 
@@ -140,7 +140,7 @@ export default class MultiCenterBubbleChart<Datum> {
         this.svg.selectAll('.group').remove();
         this.svg.selectAll('.group')
             .data(Array.from(this.groups.values()))
-            .enter()
+            .enter()            
         .append('text')
             .attr('class', 'group')
             .attr('x', d => d.x)
