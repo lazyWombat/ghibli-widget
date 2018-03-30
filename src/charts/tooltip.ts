@@ -1,8 +1,10 @@
 import * as d3 from 'd3';
 
+export type TooltipType = d3.Selection<d3.BaseType, {}, HTMLElement, undefined>;
+export type TooltipFn = (tooltip: TooltipType) => void;
+
 export default class Tooltip {
-    // tslint:disable-next-line:no-any
-    tooltip: d3.Selection<d3.BaseType, {}, HTMLElement, any>;
+    tooltip: TooltipType;
     constructor() {
         this.tooltip = d3.select('body').append('div')
             .attr('class', 'tooltip')
@@ -17,9 +19,8 @@ export default class Tooltip {
     }
 
     // tslint:disable-next-line:no-any
-    show = (content: string, event: any) => {
-        this.tooltip.style('opacity', 1.0)
-            .html(content);
+    show = (content: TooltipFn, event: any) => {
+        content(this.tooltip.style('opacity', 1.0));
         this.updatePosition(event);
     }
 

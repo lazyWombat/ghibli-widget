@@ -1,4 +1,5 @@
 import * as d3 from 'd3';
+import { TooltipFn } from './tooltip';
 import Tooltip from './tooltip';
 
 interface MultiCenterBubbleSelectors<Datum> {
@@ -6,7 +7,7 @@ interface MultiCenterBubbleSelectors<Datum> {
     group: (item: Datum) => string;
     radius: (item: Datum) => number;
     category: (item: Datum) => string;
-    tooltip: (item: Datum) => string;
+    tooltip: (item: Datum) => TooltipFn;
 }
 
 interface Node {
@@ -15,7 +16,7 @@ interface Node {
     value: number;
     group: string;
     category: string;
-    tooltip: string;
+    tooltip: TooltipFn;
     x: number;
     y: number;
 }
