@@ -3,6 +3,10 @@ export enum WidgetType {
     Loading,
     Films
 }
+export enum WidgetTheme {
+    Light,
+    Dark
+}
 export interface Component {
     resize(width: number, height: number): void;
     render(): void;
@@ -10,4 +14,16 @@ export interface Component {
 
 export interface DataComponent<Datum> extends Component {
     setData(data: Datum): void;
+}
+
+export interface Theme {
+    readonly background: string;
+    readonly color: string;
+    readonly errorColor: string;
+    readonly secondaryColor: string;
+    readonly tooltipColor: string;
+    readonly tooltipBackground: string;
+    readonly neutralColor: string;
+    highlight(color: d3.RGBColor | d3.HSLColor, k?: number): d3.RGBColor | d3.HSLColor;
+    playDown(color: d3.RGBColor | d3.HSLColor, k?: number): d3.RGBColor | d3.HSLColor;
 }

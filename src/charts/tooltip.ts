@@ -1,19 +1,20 @@
 import * as d3 from 'd3';
+import { Theme } from '../commonTypes';
 
 export type TooltipType = d3.Selection<d3.BaseType, {}, HTMLElement, undefined>;
 export type TooltipFn = (tooltip: TooltipType) => void;
 
 export default class Tooltip {
     tooltip: TooltipType;
-    constructor() {
+    constructor(theme: Theme) {
         this.tooltip = d3.select('body').append('div')
             .attr('class', 'tooltip')
             .style('position', 'absolute')
-            .style('border', '1px solid black')
-            .style('background-color', 'black')
+            .style('border', `1px solid ${theme.tooltipColor}`)
+            .style('background-color', theme.tooltipBackground)
             .style('padding', '5px')
             .style('display', 'flex')
-            .style('color', 'white')
+            .style('color', theme.tooltipColor)
             .style('pointer-events', 'none');
         this.hide();
     }

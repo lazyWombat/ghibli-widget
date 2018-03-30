@@ -1,10 +1,11 @@
 import { capitalize } from 'lodash';
 import ResizeSensor from 'css-element-queries/src/ResizeSensor';
-import { Component, WidgetType } from './commonTypes';
+import { Component, WidgetType, WidgetTheme, Theme } from './commonTypes';
 import { Film } from './models/film';
 import LoadingIndicator from './loading';
 import ErrorMessage from './error';
 import FilmsGraph from './films';
+import ThemeSelector from './theme';
 import { select } from 'd3';
 
 class WidgetState {
@@ -14,6 +15,7 @@ class WidgetState {
 }
 
 export default class Widget {
+    theme: Theme;
     element: Element;
     server: string;
     resizeSensor: ResizeSensor;
@@ -25,6 +27,8 @@ export default class Widget {
     constructor(element: Element) {
         this.element = element;
         const server = element.getAttribute('data-server');
+        this.theme = ThemeSelector(
+            WidgetTheme[capitalize(element.getAttribute('data-theme') || 'light')] || WidgetTheme.Light);
         const dataType = element.getAttribute('data-type');
         this.type = WidgetType[capitalize(dataType || 'films')] || WidgetType.Invalid;
 
@@ -76,13 +80,13 @@ export default class Widget {
             const selection = select(this.element);
 
             if (this.state.isLoading && !this.prevState.isLoading) {
-                this.content = new LoadingIndicator(selection, width, height);
+                this.content = new LoadingIndicator(selection, width, height, this.theme);
             } else if (this.state.error && !this.prevState.error) {
-                this.content = new ErrorMessage(selection, width, height, this.state.error, this.loadData);
+                this.content = new ErrorMessage(selection, width, height, this.state.error, this.loadData, this.theme);
             } else if (this.state.data && !this.prevState.data) {
-                this.content = new FilmsGraph(selection, width, height, this.state.data);
+                this.content = new FilmsGraph(selection, width, height, this.state.data, this.theme);
             } else if (!this.content) {
-                this.content = new ErrorMessage(selection, width, height, 'unknown error', this.loadData);
+                this.content = new ErrorMessage(selection, width, height, 'unknown error', this.loadData, this.theme);
             }
 
             if (this.content) {

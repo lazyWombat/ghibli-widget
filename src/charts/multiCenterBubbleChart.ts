@@ -1,4 +1,5 @@
 import * as d3 from 'd3';
+import { Theme } from '../commonTypes';
 import { TooltipFn } from './tooltip';
 import Tooltip from './tooltip';
 
@@ -35,6 +36,7 @@ const forceStrength = 0.03;
 const velocityDecay = 0.2;
 
 export default class MultiCenterBubbleChart<Datum> {
+    theme: Theme;
     maxValue: number;
     fillColor: d3.ScaleOrdinal<string, string>;
     bubbles: d3.Selection<d3.BaseType, Node, d3.BaseType, {}>;
@@ -53,11 +55,13 @@ export default class MultiCenterBubbleChart<Datum> {
     constructor(width: number, 
                 height: number, 
                 selectors: MultiCenterBubbleSelectors<Datum>,
-                data: Datum[] | null | undefined) {
+                data: Datum[] | null | undefined,
+                theme: Theme) {
         this.width = width;
         this.height = height;
         this.selectors = selectors;
         this.nodes = [];
+        this.theme = theme;
 
         this.displayMode = DisplayMode.Center;
         this.simulation = d3.forceSimulation<Node>()
@@ -72,7 +76,7 @@ export default class MultiCenterBubbleChart<Datum> {
 
         this.createNodes(data || []);
 
-        this.tooltip = new Tooltip();
+        this.tooltip = new Tooltip(theme);
     }
 
     charge = (d: Node) => -Math.pow(d.radius, 2.0) * forceStrength;
@@ -147,6 +151,7 @@ export default class MultiCenterBubbleChart<Datum> {
             .attr('x', d => d.x)
             .attr('y', 40)
             .attr('text-anchor', 'middle')
+            .attr('fill', this.theme.color)
             .text(d => d.name)
             .each(this.wrapText(this.groupWidth, 5));
     }

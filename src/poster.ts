@@ -30,7 +30,7 @@ export default class Poster {
     render(container: d3.Selection<d3.BaseType, {}, HTMLElement, undefined>, film: Film) {
         container
         .append('div')
-            .style('min-width', '200px')
+            .style('min-width', '150px')
             .style('min-height', '200px')
         .append('img')
             .style('max-height', '200px')

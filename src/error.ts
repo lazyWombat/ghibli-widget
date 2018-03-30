@@ -1,7 +1,8 @@
 import * as d3 from 'd3';
-import { DataComponent } from './commonTypes';
+import { DataComponent, Theme } from './commonTypes';
 
 export default class ErrorMessage implements DataComponent<string> {
+    theme: Theme;
     width: number;
     height: number;
     selection: d3.Selection<d3.BaseType, {}, null, undefined>;
@@ -16,12 +17,14 @@ export default class ErrorMessage implements DataComponent<string> {
     displayMoreDetails: boolean;
 
     constructor(selection: d3.Selection<d3.BaseType, {}, null, undefined>,
-                width: number, height: number, data: string, retry: () => void | null | undefined) {
+                width: number, height: number, data: string, retry: () => void | null | undefined,
+                theme: Theme) {
         this.selection = selection;
         this.width = width;
         this.height = height;
         this.error = data;
         this.retry = retry;
+        this.theme = theme;
         this.resizeActions = [];
         this.selectors = {
             svg: () => this.selection.select('svg'),
@@ -53,8 +56,8 @@ export default class ErrorMessage implements DataComponent<string> {
         this.resizeActions = [];
         this.selectors.svg().remove();
         const svg = this.selection
-            .style('background', 'white')
-            .style('border', '1px solid black')
+            .style('background', this.theme.background)
+            .style('border', `1px solid ${this.theme.color}`)
         .append('svg');
 
         this.resizeActions.push(() => this.selectors.svg()
@@ -68,6 +71,7 @@ export default class ErrorMessage implements DataComponent<string> {
 
         content.append('text')
             .attr('text-anchor', 'middle')
+            .attr('fill', this.theme.color)
             .text('Widget failed to load');
 
         this.resizeActions.push(() => this.selectors.content()
@@ -78,7 +82,7 @@ export default class ErrorMessage implements DataComponent<string> {
                 content.append('text')
                     .attr('text-anchor', 'middle')
                     .attr('dy', '1.5em')
-                    .attr('fill', 'red')
+                    .attr('fill', this.theme.errorColor)
                     .text(this.error);
             } else {
                 content.append('a')
@@ -87,7 +91,7 @@ export default class ErrorMessage implements DataComponent<string> {
                 .append('text')
                     .attr('text-anchor', 'middle')
                     .attr('dy', '1.5em')
-                    .attr('fill', '#0078d7')
+                    .attr('fill', this.theme.secondaryColor)
                     .text('More details');
             }
         }
@@ -108,6 +112,7 @@ export default class ErrorMessage implements DataComponent<string> {
                 .attr('height', 16)
                 .style('fill-opacity', 0);
             link.append('path')
+                    .attr('fill', this.theme.color)
                     .attr('d', 'M14 1a1 1 0 0 0-1 1v1.146A6.948 6.948 0 0 0 1.227 6.307' +
                                'a1 1 0 1 0 1.94.484A4.983 4.983 0 0 1 8 3a4.919 4.919 0 0 1 3.967 2' +
                                'H10a1 1 0 0 0 0 2h4a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zm.046 7.481' +
