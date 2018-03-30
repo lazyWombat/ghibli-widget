@@ -8,8 +8,10 @@ export default class Tooltip {
             .attr('class', 'tooltip')
             .style('position', 'absolute')
             .style('border', '1px solid black')
-            .style('background-color', 'beige')
-            .style('padding', '3px')
+            .style('background-color', 'black')
+            .style('padding', '5px')
+            .style('display', 'flex')
+            .style('color', 'white')
             .style('pointer-events', 'none');
         this.hide();
     }

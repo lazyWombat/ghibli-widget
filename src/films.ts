@@ -18,11 +18,17 @@ export default class FilmGraph implements DataComponent<Film[]> {
                 radius: film => film.rt_score,
                 category: film => film.director,
                 tooltip: film => (
-                    `<span>Title: <strong>${film.title}</strong></span>` +
-                    '<br/>' +
-                    `<span>Year: <strong>${film.release_date}</strong></span>` + 
-                    '<br/>' +
-                    `<span>Director: <strong>${film.director}</strong></span>`
+                    '<div>' +
+                    '<img src="/poster.jpg" ' +
+                    'style="max-height: 200px; width: auto;" /></div>' +
+                    '<div style="margin: 5px;color: gray;">' +
+                    `<h2><span style="color:white">${film.title}</span> (${film.release_date})</h2>` +
+                    '<hr/>' +
+                    `<span>Director: <strong style="color:white">${film.director}</strong></span>` +
+                    `<br/><span>Producer: <strong style="color:white">${film.producer}</strong></span>` +
+                    '<br/><br/><span>Rating</span>' +
+                    `<br/><strong style="color:white;font-size:2em">${film.rt_score}%</strong>` +
+                    '</div>'
                 )
             }, 
             data);
