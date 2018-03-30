@@ -1,5 +1,6 @@
 export enum WidgetType {
     Invalid,
+    Loading,
     Films
 }
 export interface Component {

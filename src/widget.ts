@@ -45,9 +45,11 @@ export default class Widget {
 
     loadData = () => {
         this.state = { isLoading: true };
-        fetch(`${this.server}/films`)
-            .then(this.onResponse)
-            .catch(this.onError);
+        if (this.type !== WidgetType.Loading) {
+            fetch(`${this.server}/films`)
+                .then(this.onResponse)
+                .catch(this.onError);
+        }
         this.render();
     }
 
