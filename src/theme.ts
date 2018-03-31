@@ -8,8 +8,8 @@ class LightTheme implements Theme {
     get tooltipColor() { return 'black'; }
     get tooltipBackground() { return 'white'; }
     get neutralColor() { return 'gray'; }
-    highlight = (color: d3.RGBColor | d3.HSLColor, k = 1) => color.brighter(k);
-    playDown = (color: d3.RGBColor | d3.HSLColor, k = 1) => color.darker(k);
+    highlight = (color: d3.RGBColor | d3.HSLColor, k = 1) => color.darker(k);
+    playDown = (color: d3.RGBColor | d3.HSLColor, k = 1) => color.brighter(k);
 }
 class DarkTheme implements Theme {
     get background() { return 'black'; }
@@ -19,8 +19,8 @@ class DarkTheme implements Theme {
     get tooltipColor() { return 'white'; }
     get tooltipBackground() { return 'black'; }
     get neutralColor() { return 'gray'; }
-    highlight = (color: d3.RGBColor | d3.HSLColor, k = 1) => color.darker(k);
-    playDown = (color: d3.RGBColor | d3.HSLColor, k = 1) => color.brighter(k);
+    highlight = (color: d3.RGBColor | d3.HSLColor, k = 1) => color.brighter(k);
+    playDown = (color: d3.RGBColor | d3.HSLColor, k = 1) => color.darker(k);
 }
 
 export default function(theme: WidgetTheme) {
