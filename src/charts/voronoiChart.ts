@@ -56,7 +56,7 @@ export default class VoronoiChart<Datum> {
                 .attr('class', 'guide')
                 .append('line')
                     .attr('x1', x).attr('x2', x)
-                    .attr('y1', y + r).attr('y2', this.contentHeight)
+                    .attr('y1', y + r).attr('y2', this.contentHeight + 20)
                     .style('stroke', color)
                     .style('opacity', 0)
                     .style('pointer-events', 'none')
@@ -66,6 +66,11 @@ export default class VoronoiChart<Datum> {
                 .attr('class', 'guide')
                 .attr('x', x).attr('y', this.contentHeight + 38)
                 .style('stroke', color)
+                .style('fill', color)
+                .style('font-size', '14px')
+                .style('font-weight', '600')
+                .style('pointer-events', 'none')
+                .style('text-size-adjust', '100%')
                 .style('opacity', 0)
                 .style('text-anchor', 'middle')
                 .text(this.selectors.x(d))
@@ -75,7 +80,7 @@ export default class VoronoiChart<Datum> {
             this.wrapper.append('g')
                 .attr('class', 'guide')
                 .append('line')
-                    .attr('x1', x - r).attr('x2', 0)
+                    .attr('x1', x - r).attr('x2', -20)
                     .attr('y1', y).attr('y2', y)
                     .style('stroke', color)
                     .style('opacity', 0)
@@ -85,7 +90,13 @@ export default class VoronoiChart<Datum> {
             this.wrapper.append('text')
                 .attr('class', 'guide')
                 .attr('x', -30).attr('y', y)
+                .attr('dy', '0.35em')
                 .style('stroke', color)
+                .style('fill', color)
+                .style('font-size', '14px')
+                .style('font-weight', '600')
+                .style('pointer-events', 'none')
+                .style('text-size-adjust', '100%')
                 .style('opacity', 0)
                 .style('text-anchor', 'end')
                 .text(d3.format('.2s')(this.selectors.y(d)))
@@ -103,13 +114,13 @@ export default class VoronoiChart<Datum> {
                 .attr('x', x - length / 2).attr('y', y - height - r - offset)
                 .attr('width', 40).attr('height', height)
                 .style('pointer-events', 'none')
-                .style('stroke', 'black')
-                .style('fill', 'white');
+                .style('stroke', this.theme.tooltipColor)
+                .style('fill', this.theme.tooltipBackground);
 
             const text = tooltip.append('text')
                 .attr('x', x + margin).attr('y', y - height - r - offset + 15)
                 .style('pointer-events', 'none')
-                .style('color', 'black')
+                .style('fill', this.theme.tooltipColor)
                 .text(this.selectors.title(d));
 
             if (y - height - r - offset < 0) {
@@ -153,10 +164,13 @@ export default class VoronoiChart<Datum> {
 
         const xAxis = d3.axisBottom(xScale).ticks(5);
 
-        this.wrapper.append('g')
+        let axis = this.wrapper.append('g')
             .attr('transform', `translate(0, ${this.contentHeight})`)
             .call(xAxis);
-
+        axis.selectAll('line').style('stroke', this.theme.color).style('shape-rendering', 'crispEdges');
+        axis.selectAll('path').style('stroke', this.theme.color).style('shape-rendering', 'crispEdges');
+        axis.selectAll('text').style('stroke', this.theme.color).style('font-size', '10px').style('font-weight', 400);
+    
         // set the y-axis
         const yScale = d3.scaleLinear()
             .range([this.contentHeight, 0])
@@ -165,14 +179,18 @@ export default class VoronoiChart<Datum> {
 
         const yAxis = d3.axisLeft(yScale).ticks(6);
 
+        axis = this.wrapper.append('g')
+            .attr('transform', 'translate(0,0)')
+            .style('stroke', this.theme.color)
+            .call(yAxis);
+        axis.selectAll('line').style('stroke', this.theme.color).style('shape-rendering', 'crispEdges');
+        axis.selectAll('path').style('stroke', this.theme.color).style('shape-rendering', 'crispEdges');
+        axis.selectAll('text').style('stroke', this.theme.color).style('font-size', '10px').style('font-weight', 400);
+
         const rScale = d3.scalePow().exponent(0.5)
             .domain(d3.extent(this.data, d => this.selectors.y(d)) as [number, number])
             .range([5, 12]);
-
-        this.wrapper.append('g')
-            .attr('transform', 'translate(0,0)')
-            .call(yAxis);
-
+    
         // voronoi
         const voronoi = d3.voronoi<Datum>()
             .x(d => xScale(this.selectors.x(d)))
@@ -225,9 +243,10 @@ export default class VoronoiChart<Datum> {
         this.wrapper.append('g')
             .append('text')
             .attr('text-anchor', 'end')
-            .attr('font-size', '12px')
+            .attr('font-size', '12px')            
             .attr('transform', `translate(${this.contentWidth},${this.contentHeight - 10})`)
             .style('pointer-events', 'none')
+            .style('fill', this.theme.color)
             .text('Release year');
 
         this.wrapper.append('g')
@@ -236,6 +255,7 @@ export default class VoronoiChart<Datum> {
             .attr('font-size', '12px')
             .attr('transform', 'translate(18, 0) rotate(-90)')
             .style('pointer-events', 'none')
+            .style('fill', this.theme.color)
             .text('Gross revenue');
     }
 }
