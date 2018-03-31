@@ -1,13 +1,13 @@
 import * as d3 from 'd3';
-import { Component, Theme } from './commonTypes';
+import { Component, Theme, Selection } from './commonTypes';
 
 export default class LoadingIndicator implements Component {
     theme: Theme;
-    selection: d3.Selection<d3.BaseType, {}, null, undefined>;
+    selection: Selection;
     width: number;
     height: number;
 
-    constructor(selection: d3.Selection<d3.BaseType, {}, null, undefined>,
+    constructor(selection: Selection,
                 width: number, height: number, theme: Theme) {
         this.selection = selection;
         this.width = width;

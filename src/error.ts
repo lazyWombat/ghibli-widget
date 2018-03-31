@@ -1,22 +1,21 @@
-import * as d3 from 'd3';
-import { DataComponent, Theme } from './commonTypes';
+import { DataComponent, Theme, Selection } from './commonTypes';
 
 export default class ErrorMessage implements DataComponent<string> {
     theme: Theme;
     width: number;
     height: number;
-    selection: d3.Selection<d3.BaseType, {}, null, undefined>;
+    selection: Selection;
     error: string;
     retry: () => void | null | undefined;
     resizeActions: { (): void }[];
     selectors: {
-        svg: () => d3.Selection<d3.BaseType, {}, null, undefined>;
-        content: () => d3.Selection<d3.BaseType, {}, null, undefined>;
-        retry: () => d3.Selection<d3.BaseType, {}, null, undefined>;
+        svg: () => Selection;
+        content: () => Selection;
+        retry: () => Selection;
     };
     displayMoreDetails: boolean;
 
-    constructor(selection: d3.Selection<d3.BaseType, {}, null, undefined>,
+    constructor(selection: Selection,
                 width: number, height: number, data: string, retry: () => void | null | undefined,
                 theme: Theme) {
         this.selection = selection;

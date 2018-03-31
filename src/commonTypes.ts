@@ -1,7 +1,9 @@
+export type Selection = d3.Selection<d3.BaseType, {}, null, undefined>;
 export enum WidgetType {
     Invalid,
     Loading,
-    Films
+    Films,
+    BoxOffice
 }
 export enum WidgetTheme {
     Light,
@@ -11,11 +13,12 @@ export interface Component {
     resize(width: number, height: number): void;
     render(): void;
 }
-
 export interface DataComponent<Datum> extends Component {
     setData(data: Datum): void;
 }
-
+export interface BoxOffice {
+    grossRevenue(title: string): number | undefined;
+}
 export interface Theme {
     readonly background: string;
     readonly color: string;

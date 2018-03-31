@@ -1,5 +1,4 @@
-import * as d3 from 'd3';
-import { DataComponent, Theme } from './commonTypes';
+import { DataComponent, Theme, Selection } from './commonTypes';
 import { Film } from './models/film';
 import BubbleChart from './charts/multiCenterBubbleChart';
 import Poster from './poster';
@@ -8,10 +7,10 @@ export default class FilmGraph implements DataComponent<Film[]> {
     theme: Theme;
     poster: Poster;
     chart: BubbleChart<Film>;
-    selection: d3.Selection<d3.BaseType, {}, null, undefined>;
+    selection: Selection;
 
-    constructor(selection: d3.Selection<d3.BaseType, {}, null, undefined>,
-                width: number, height: number, data: Film[], theme: Theme) {
+    constructor(selection: Selection, width: number, height: number, 
+                data: Film[], theme: Theme) {
         this.selection = selection;
         this.poster = new Poster();
         this.theme = theme;
