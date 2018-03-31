@@ -169,12 +169,14 @@ export default class MultiCenterBubbleChart<Datum> {
     }
 
     showDetails = (d: Node) => {
-        d3.select(d3.event.currentTarget).attr('stroke', 'black');
+        d3.select(d3.event.currentTarget).attr('stroke', this.theme.color);
         this.tooltip.show(d.tooltip, d3.event);             
     }
 
     hideDetails = (d: Node) => {
-        d3.select(d3.event.currentTarget).attr('stroke', d3.rgb(this.fillColor(d.category)).darker().toString());
+        d3.select(d3.event.currentTarget).attr(
+            'stroke', 
+            this.theme.highlight(d3.rgb(this.fillColor(d.category))).toString());
         this.tooltip.hide();
     }
 
@@ -257,7 +259,7 @@ export default class MultiCenterBubbleChart<Datum> {
             .classed('bubble', true)
             .attr('r', 0)
             .attr('fill', d => this.fillColor(d.category))
-            .attr('stroke', d => d3.rgb(this.fillColor(d.category)).darker().toString())
+            .attr('stroke', d => this.theme.highlight(d3.rgb(this.fillColor(d.category))).toString())
             .attr('stroke-width', 2)
             .on('mouseover', this.showDetails)
             .on('mouseout', this.hideDetails);
