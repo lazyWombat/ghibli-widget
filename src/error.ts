@@ -1,109 +1,106 @@
-import { DataComponent, Theme, Selection } from './commonTypes';
+import * as d3 from 'd3';
+import { DataComponent, Context, Selection, Size } from './commonTypes';
+
+type RetryFn = () => void;
 
 export default class ErrorMessage implements DataComponent<string> {
-    theme: Theme;
-    width: number;
-    height: number;
+    context: Context;
+    size: Size;
     selection: Selection;
     error: string;
     retry: () => void | null | undefined;
     resizeActions: { (): void }[];
-    selectors: {
-        svg: () => Selection;
-        content: () => Selection;
-        retry: () => Selection;
-    };
     displayMoreDetails: boolean;
+    svg: d3.Selection<d3.BaseType, {}, null, undefined>;
+    contentGroup: d3.Selection<d3.BaseType, {}, null, undefined>;
+    retryGroup: d3.Selection<d3.BaseType, {}, null, undefined>;
 
-    constructor(selection: Selection,
-                width: number, height: number, data: string, retry: () => void | null | undefined,
-                theme: Theme) {
-        this.selection = selection;
-        this.width = width;
-        this.height = height;
-        this.error = data;
-        this.retry = retry;
-        this.theme = theme;
-        this.resizeActions = [];
-        this.selectors = {
-            svg: () => this.selection.select('svg'),
-            content: () => this.selectors.svg().select('g'),
-            retry: () => this.selectors.svg().select('g:nth-child(2)')
-        };
+    constructor() {
+        this.displayMoreDetails = false;
     }
 
-    setData = (data: string) => {
-        this.error = data;
-        this.render();
-    }
+    setData = (data: string) => this.error = data;
+
+    setRetry = (retry: RetryFn) => this.retry = retry;
 
     showDetails = () => {
         this.displayMoreDetails = true;
         this.render();
     }
 
-    resize = (width: number, height: number, force: boolean = false) => {
-        if (this.width !== width || this.height !== height || force) {
-            this.width = width;
-            this.height = height;
+    init(selection: Selection, size: Size, context: Context) {
+        this.selection = selection;
+        this.size = size;
+        this.context = context;
+        this.render = this.renderImpl;
+        this.resize = this.resizeImpl;
+    }
 
+    resize(size: Size) { /* do nothing */ }
+    render() { /* do nothing */ }
+
+    resizeImpl = (size: Size) => {
+        this.size = size;
+        if (this.resizeActions) {            
             this.resizeActions.forEach(action => action());
+        } else {
+            this.render();
         }
     }
 
-    render = () => {
+    renderImpl = () => {
         this.resizeActions = [];
-        this.selectors.svg().remove();
-        const svg = this.selection
-            .style('background', this.theme.background)
-            .style('border', `1px solid ${this.theme.color}`)
+        this.selection.select('svg').remove();
+        this.svg = this.selection
+            .style('background', this.context.theme.background)
+            .style('border', `1px solid ${this.context.theme.color}`)
         .append('svg');
 
-        this.resizeActions.push(() => this.selectors.svg()
-            .attr('width', this.width)
-            .attr('height', this.height));
+        this.resizeActions.push(() => this.selection.select('svg')
+            .attr('width', this.size.width)
+            .attr('height', this.size.height));
 
-        const content = svg.append('g');
+        this.contentGroup = this.svg.append('g');
 
-        this.resizeActions.push(() => this.selectors.content()
-            .attr('transform', `translate(${this.width * 0.5}, ${this.height * 0.5})`));
+        this.resizeActions.push(() => this.contentGroup
+            .attr('transform', `translate(${this.size.width * 0.5}, ${this.size.height * 0.5})`));
 
-        content.append('text')
+        this.contentGroup.append('text')
             .attr('text-anchor', 'middle')
-            .attr('fill', this.theme.color)
+            .attr('fill', this.context.theme.color)
             .text('Widget failed to load');
 
-        this.resizeActions.push(() => this.selectors.content()
-            .style('font-size', `${this.width / 300}em`));
+        this.resizeActions.push(() => this.contentGroup
+            .style('font-size', `${Math.min(this.size.width / 300, this.size.height / 30)}em`));
 
         if (this.error) {
             if (this.displayMoreDetails) {
-                content.append('text')
+                this.contentGroup.append('text')
                     .attr('text-anchor', 'middle')
                     .attr('dy', '1.5em')
-                    .attr('fill', this.theme.errorColor)
+                    .attr('fill', this.context.theme.errorColor)
                     .text(this.error);
             } else {
-                content.append('a')
+                this.contentGroup.append('a')
                 .on('click', this.showDetails)
                 .style('cursor', 'pointer')
                 .append('text')
                     .attr('text-anchor', 'middle')
                     .attr('dy', '1.5em')
-                    .attr('fill', this.theme.secondaryColor)
+                    .attr('fill', this.context.theme.secondaryColor)
                     .text('More details');
             }
         }
 
         if (this.retry) {
+            this.retryGroup = this.svg.append('g');
             this.resizeActions.push(() => {
-                const scale = Math.max(1, this.width / 400);
+                const scale = Math.max(1, this.size.width / 400);
                 const offset = 16 * scale + 5;
-                this.selectors.retry()
-                    .attr('transform', `translate(${this.width - offset}, 5) scale(${scale})`);
+                this.retryGroup
+                    .attr('transform', `translate(${this.size.width - offset}, 5) scale(${scale})`);
             });
-
-            const link = svg.append('g').append('a')
+            const link = this.retryGroup.append('g').append('a')
                 .style('cursor', 'pointer')
                 .on('click', this.retry);
             link.append('rect')
@@ -111,7 +108,7 @@ export default class ErrorMessage implements DataComponent<string> {
                 .attr('height', 16)
                 .style('fill-opacity', 0);
             link.append('path')
-                    .attr('fill', this.theme.color)
+                    .attr('fill', this.context.theme.color)
                     .attr('d', 'M14 1a1 1 0 0 0-1 1v1.146A6.948 6.948 0 0 0 1.227 6.307' +
                                'a1 1 0 1 0 1.94.484A4.983 4.983 0 0 1 8 3a4.919 4.919 0 0 1 3.967 2' +
                                'H10a1 1 0 0 0 0 2h4a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zm.046 7.481' +
@@ -120,6 +117,6 @@ export default class ErrorMessage implements DataComponent<string> {
                                'a6.948 6.948 0 0 0 11.773-3.161 1 1 0 0 0-.727-1.212z');
         }
 
-        this.resize(this.width, this.height, true);
+        this.resizeActions.forEach(action => action());
     }
 }

@@ -1,15 +1,14 @@
 import * as d3 from 'd3';
-import { Theme } from '../commonTypes';
-import { TooltipFn } from './tooltip';
-import Tooltip from './tooltip';
+import { Component, Selection, Context, Size } from '../commonTypes';
+import Tooltip, { TooltipFn } from './globalTooltip';
 
-interface MultiCenterBubbleSelectors<Datum> {
-    id: (item: Datum) => string;
-    group: (item: Datum) => string;
-    radius: (item: Datum) => number;
-    category: (item: Datum) => string;
-    tooltip: (item: Datum) => TooltipFn;
-}
+type MultiCenterBubbleSelector<Datum> = (data: Datum) => {
+    id: string,
+    group: string,
+    radius: number,
+    category: string,
+    tooltip: TooltipFn,
+};
 
 interface Node {
     id: string;
@@ -35,14 +34,15 @@ enum DisplayMode {
 const forceStrength = 0.03;
 const velocityDecay = 0.2;
 
-export default class MultiCenterBubbleChart<Datum> {
-    theme: Theme;
+export default class MultiCenterBubbleChart<Datum> implements Component {
+    selection: Selection;
+    context: Context;
     maxValue: number;
     fillColor: d3.ScaleOrdinal<string, string>;
     bubbles: d3.Selection<d3.BaseType, Node, d3.BaseType, {}>;
     width: number;
     height: number;
-    selectors: MultiCenterBubbleSelectors<Datum>;
+    selector: MultiCenterBubbleSelector<Datum>;
     nodes: Node[];
     svg: d3.Selection<d3.BaseType, {}, null, undefined>;
     circles: d3.Selection<d3.BaseType, Node, d3.BaseType, {}>;
@@ -52,31 +52,39 @@ export default class MultiCenterBubbleChart<Datum> {
     tooltip: Tooltip;
     groupWidth: number;
 
-    constructor(width: number, 
-                height: number, 
-                selectors: MultiCenterBubbleSelectors<Datum>,
-                data: Datum[] | null | undefined,
-                theme: Theme) {
-        this.width = width;
-        this.height = height;
-        this.selectors = selectors;
+    constructor(selector: MultiCenterBubbleSelector<Datum>) {
+        this.selector = selector;
         this.nodes = [];
-        this.theme = theme;
-
         this.displayMode = DisplayMode.Center;
-        this.simulation = d3.forceSimulation<Node>()
-            .velocityDecay(velocityDecay)            
-            .force('x', d3.forceX().strength(forceStrength).x(this.width / 2))
-            .force('y', d3.forceY().strength(forceStrength).y(this.height / 2))
-            .force('charge', d3.forceManyBody().strength(this.charge))
-            .on('tick', this.ticked)
-            .stop();
-
         this.fillColor = d3.scaleOrdinal(d3.schemeCategory10);
+    }
 
-        this.createNodes(data || []);
+    init(selection: Selection, size: Size, context: Context) {
+        this.context = context;
+        this.selection = selection;
+        this.width = size.width;
+        this.height = size.height;
+        this.tooltip = new Tooltip(this.context.theme);
 
-        this.tooltip = new Tooltip(theme);
+        this.render = this.renderImpl;
+        this.resize = this.resizeImpl;
+    }
+
+    render() { /* do nothing */ }
+    resize(size: Size) { /* do nothing */ }
+
+    createNodes = (data: Datum[]) => {
+        this.nodes = data.map(this.selector).map(d => (
+            { 
+                ...d, 
+                x: 0,
+                y: 0,
+                radius: 0,
+                value: d.radius
+            }));
+        this.maxValue = d3.max(this.nodes, n => n.value) || 0;
+        this.createGroups(this.nodes.map(n => n.group));
+        this.nodes.sort((a, b) => d3.descending(a.value, b.value));
     }
 
     charge = (d: Node) => -Math.pow(d.radius, 2.0) * forceStrength;
@@ -88,9 +96,9 @@ export default class MultiCenterBubbleChart<Datum> {
         return d3.scalePow().exponent(0.5).domain([0, this.maxValue]).range([2, maxRadius]);
     }
 
-    createGroups = (data: Datum[]) => {
+    createGroups = (groups: string[]) => {
         this.groups = new Map<string, Group>();
-        data.map(this.selectors.group).forEach(group => {
+        groups.forEach(group => {
             this.groups.set(group, { x: this.width / 2, name: group });
         });
         this.recalculateGroupPositions();
@@ -112,26 +120,6 @@ export default class MultiCenterBubbleChart<Datum> {
         }
     }
 
-    createNodes = (data: Datum[]) => {
-        this.maxValue = d3.max(data, d => this.selectors.radius(d)) || 0;
-        const radiusScale = this.getRadiusScale();
-
-        this.createGroups(data);
-
-        this.nodes = data.map(item => (
-            {
-                id: this.selectors.id(item),
-                radius: radiusScale(this.selectors.radius(item)),
-                value: this.selectors.radius(item),
-                group: this.selectors.group(item),
-                category: this.selectors.category(item),
-                x: Math.random() * this.width,
-                y: Math.random() * this.height,
-                tooltip: this.selectors.tooltip(item)
-            }));
-        this.nodes.sort((a, b) => b.value - a.value);
-    }
-
     nodeGroupPosition = (node: Node) => {
         const group = this.groups.get(node.group);
         return group ? group.x : this.width / 2;
@@ -151,7 +139,7 @@ export default class MultiCenterBubbleChart<Datum> {
             .attr('x', d => d.x)
             .attr('y', 40)
             .attr('text-anchor', 'middle')
-            .attr('fill', this.theme.color)
+            .attr('fill', this.context.theme.color)
             .text(d => d.name)
             .each(this.wrapText(this.groupWidth, 5));
     }
@@ -169,24 +157,24 @@ export default class MultiCenterBubbleChart<Datum> {
     }
 
     showDetails = (d: Node) => {
-        d3.select(d3.event.currentTarget).attr('stroke', this.theme.color);
+        d3.select(d3.event.currentTarget).attr('stroke', this.context.theme.color);
         this.tooltip.show(d.tooltip, d3.event);             
     }
 
     hideDetails = (d: Node) => {
         d3.select(d3.event.currentTarget).attr(
             'stroke', 
-            this.theme.highlight(d3.rgb(this.fillColor(d.category))).toString());
+            this.context.theme.highlight(d3.rgb(this.fillColor(d.category))).toString());
         this.tooltip.hide();
     }
 
     updateData = (data: Datum[]) => this.createNodes(data);
 
-    resize = (width: number, height: number, selection: d3.Selection<d3.BaseType, {}, null, undefined>) => {
-        this.width = width;
-        this.height = height;
+    resizeImpl = (size: Size) => {
+        this.width = size.width;
+        this.height = size.height;
 
-        selection.select('svg')
+        this.selection.select('svg')
             .attr('width', this.width)
             .attr('height', this.height);
 
@@ -237,12 +225,28 @@ export default class MultiCenterBubbleChart<Datum> {
         };
     }
 
-    render = (selection: d3.Selection<d3.BaseType, {}, null, undefined>) => {
-        this.svg = selection.append('svg')
+    renderImpl = () => {
+        const radiusScale = this.getRadiusScale();
+                
+        this.nodes.forEach(n => {
+            n.x = Math.random() * this.width;
+            n.y = Math.random() * this.height;
+            n.radius = radiusScale(n.value);
+        });
+
+        this.simulation = d3.forceSimulation<Node>()
+            .velocityDecay(velocityDecay)            
+            .force('x', d3.forceX().strength(forceStrength).x(this.width / 2))
+            .force('y', d3.forceY().strength(forceStrength).y(this.height / 2))
+            .force('charge', d3.forceManyBody().strength(this.charge))
+            .on('tick', this.ticked)
+            .stop();
+
+        this.svg = this.selection.append('svg')
             .attr('width', this.width)
             .attr('height', this.height);
 
-        selection.append('a')
+        this.selection.append('a')
             .on('click', this.toggleDisplay)
             .style('cursor', 'pointer')
             .style('position', 'absolute')
@@ -259,7 +263,7 @@ export default class MultiCenterBubbleChart<Datum> {
             .classed('bubble', true)
             .attr('r', 0)
             .attr('fill', d => this.fillColor(d.category))
-            .attr('stroke', d => this.theme.highlight(d3.rgb(this.fillColor(d.category))).toString())
+            .attr('stroke', d => this.context.theme.highlight(d3.rgb(this.fillColor(d.category))).toString())
             .attr('stroke-width', 2)
             .on('mouseover', this.showDetails)
             .on('mouseout', this.hideDetails);

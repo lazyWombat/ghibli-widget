@@ -1,23 +1,20 @@
+import { Film } from './models/film';
+
 export type Selection = d3.Selection<d3.BaseType, {}, null, undefined>;
-export enum WidgetType {
-    Invalid,
-    Loading,
-    Films,
-    BoxOffice
-}
-export enum WidgetTheme {
-    Light,
-    Dark
-}
+export type Size = { width: number; height: number; };
 export interface Component {
-    resize(width: number, height: number): void;
+    init(selection: Selection, size: Size, context: Context): void;
+    resize(size: Size): void;
     render(): void;
 }
 export interface DataComponent<Datum> extends Component {
     setData(data: Datum): void;
 }
-export interface BoxOffice {
-    grossRevenue(title: string): number | undefined;
+export interface BoxOfficeService {
+    grossRevenue(title: string): Promise<number | undefined>;
+}
+export interface GhibliService {
+    getFilms(): Promise<Film[]>;
 }
 export interface Theme {
     readonly background: string;
@@ -29,4 +26,13 @@ export interface Theme {
     readonly neutralColor: string;
     highlight(color: d3.RGBColor | d3.HSLColor, k?: number): d3.RGBColor | d3.HSLColor;
     playDown(color: d3.RGBColor | d3.HSLColor, k?: number): d3.RGBColor | d3.HSLColor;
+}
+export interface Context {
+    readonly root: Element;
+    readonly theme: Theme;
+    readonly server: string;
+    readonly services: {
+        readonly ghibliService: GhibliService;
+        readonly boxOfficeService: BoxOfficeService;
+    };
 }

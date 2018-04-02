@@ -1,155 +1,129 @@
 import * as d3 from 'd3';
-import { Theme, Selection } from '../commonTypes';
+import { Component, Selection, Context, Size } from '../commonTypes';
+import Tooltip, { TooltipFn } from './embeddedTooltip';
 
-interface VoronoiSelectors<Datum> {
-    id: (item: Datum) => string;
-    title: (item: Datum) => string;
-    category: (item: Datum) => string;
-    x: (item: Datum) => number;
-    y: (item: Datum) => number;
-    r: (item: Datum) => number;
+interface Node {
+    id: string;
+    title: string;
+    category: string;
+    x: number;
+    y: number;
+    r: number;
+    tooltip: TooltipFn;
 }
 
-export default class VoronoiChart<Datum> {
+type VoronoiSelector<Datum> = (data: Datum) => Node;
+
+export default class VoronoiChart<Datum> implements Component {
+    tooltip: Tooltip;
+    selection: d3.Selection<d3.BaseType, {}, null, undefined>;
+    context: Context;
     margin: { left: number; top: number; right: number; bottom: number; };
     svg: d3.Selection<d3.BaseType, {}, null, undefined>;
     wrapper: d3.Selection<d3.BaseType, {}, null, undefined>;
     color: d3.ScaleOrdinal<string, string>;
-    data: Datum[] | null | undefined;
-    theme: Theme;
-    selectors: VoronoiSelectors<Datum>;
+    selector: VoronoiSelector<Datum>;
     height: number;
     width: number;
     opacity: number;
+    nodes: Node[];
 
-    constructor(width: number, 
-                height: number, 
-                selectors: VoronoiSelectors<Datum>,
-                data: Datum[] | null | undefined,
-                theme: Theme) {
-        this.width = width;
-        this.height = height;
-        this.selectors = selectors;
-        this.theme = theme;
-        this.data = data;
+    constructor(selectors: VoronoiSelector<Datum>) {
+        this.selector = selectors;
         this.color = d3.scaleOrdinal(d3.schemeCategory10);
         this.margin = { left: 60, top: 20, right: 20, bottom: 50 };
         this.opacity = 0.8;
+        this.nodes = [];
     }
 
-    updateData = (data: Datum[]) => { 
-        // do nothing 
+    init(selection: Selection, size: Size, context: Context) {
+        this.selection = selection;
+        this.width = size.width;
+        this.height = size.height;
+        this.context = context;
+        this.tooltip = new Tooltip(context, size, this.margin);
+        this.render = this.renderImpl;
+        this.resize = this.resizeImpl;
     }
-    resize = (width: number, height: number, selection: Selection) => {    
+
+    render() { /* do nothing */ }
+    resize(size: Size) { /* do nothing */ }
+
+    get theme() { return this.context.theme; }
+
+    updateData = (data: Datum[]) => { 
+        this.nodes = data.map(this.selector);
+        this.nodes.sort((a, b) => d3.descending(a.r, b.r));
+    }
+    
+    resizeImpl = (size: Size) => {    
         // do nothing
     }
-    showTooltip = (d: Datum) => {
+
+    selectNode = (d: Node) => {
         if (d && this.wrapper) {
-            const element = this.wrapper.selectAll(`.circles.id-${this.selectors.id(d)}`);
+            const element = this.wrapper.selectAll(`.circles.id-${d.id}`);
             const x = +element.attr('cx');
             const y = +element.attr('cy');
             const r = +element.attr('r');
             const color = element.style('fill');
-            // tslint:disable-next-line:no-console
-            console.log(x, y, color);
-            this.wrapper.append('g')
-                .attr('class', 'guide')
-                .append('line')
-                    .attr('x1', x).attr('x2', x)
-                    .attr('y1', y + r).attr('y2', this.contentHeight + 20)
-                    .style('stroke', color)
-                    .style('opacity', 0)
-                    .style('pointer-events', 'none')
-                .transition().duration(200)
-                    .style('opacity', this.opacity);
-            this.wrapper.append('text')
-                .attr('class', 'guide')
-                .attr('x', x).attr('y', this.contentHeight + 38)
-                .style('stroke', color)
-                .style('fill', color)
-                .style('font-size', '14px')
-                .style('font-weight', '600')
-                .style('pointer-events', 'none')
-                .style('text-size-adjust', '100%')
-                .style('opacity', 0)
-                .style('text-anchor', 'middle')
-                .text(this.selectors.x(d))
-            .transition().duration(200)
-                .style('opacity', this.opacity);
-                
-            this.wrapper.append('g')
-                .attr('class', 'guide')
-                .append('line')
-                    .attr('x1', x - r).attr('x2', -20)
-                    .attr('y1', y).attr('y2', y)
-                    .style('stroke', color)
-                    .style('opacity', 0)
-                    .style('pointer-events', 'none')
-                .transition().duration(200)
-                    .style('opacity', this.opacity);
-            this.wrapper.append('text')
-                .attr('class', 'guide')
-                .attr('x', -30).attr('y', y)
-                .attr('dy', '0.35em')
-                .style('stroke', color)
-                .style('fill', color)
-                .style('font-size', '14px')
-                .style('font-weight', '600')
-                .style('pointer-events', 'none')
-                .style('text-size-adjust', '100%')
-                .style('opacity', 0)
-                .style('text-anchor', 'end')
-                .text(d3.format('.2s')(this.selectors.y(d)))
-            .transition().duration(200)
-                .style('opacity', this.opacity);
 
-            const tooltip = this.wrapper.append('g')
-                .attr('class', 'tooltip');
+            this.renderGuide(
+                x, x, y + r, this.contentHeight + 20,
+                color, x, this.contentHeight + 38, d.x.toString());
 
-            const margin = 5;
-            const offset = 5;
-            const height = 20;
-            let length = 40;
-            const rect = tooltip.append('rect')
-                .attr('x', x - length / 2).attr('y', y - height - r - offset)
-                .attr('width', 40).attr('height', height)
-                .style('pointer-events', 'none')
-                .style('stroke', this.theme.tooltipColor)
-                .style('fill', this.theme.tooltipBackground);
+            this.renderGuide(
+                x - r, -20, y, y,
+                color, -30, y, d3.format('.2s')(d.y)
+            );
 
-            const text = tooltip.append('text')
-                .attr('x', x + margin).attr('y', y - height - r - offset + 15)
-                .style('pointer-events', 'none')
-                .style('fill', this.theme.tooltipColor)
-                .text(this.selectors.title(d));
-
-            if (y - height - r - offset < 0) {
-                rect.attr('y', y + r + offset);
-                text.attr('y', y + r + offset + 15);
-            }
-            length = (text.node() as SVGTextContentElement).getComputedTextLength();
-            rect.attr('width', length + 10);
-            const posX = Math.max(0, Math.min(this.contentWidth - length + margin * 2, x - length / 2 - margin));
-            rect.attr('x', posX);
-            text.attr('x', posX + margin);
+            this.tooltip.update(x, y, r, d.tooltip);
         }
     }
-    removeTooltip = (d: Datum, index: number, elements: d3.BaseType[]) => {
-        if (d && this.wrapper) {
-            this.wrapper.selectAll('.tooltip').remove();
+    
+    removeSelection = () => {
+        this.tooltip.hide();
+        if (this.wrapper) {
             this.wrapper.selectAll('.guide')
                 .transition().duration(200)
                 .style('opacity', 0)
                 .remove();
         }
     }
+
+    renderGuide = (x1: number, x2: number, y1: number, y2: number, 
+                   color: string, tx: number, ty: number, text: string) => {
+        this.wrapper.append('g')
+        .attr('class', 'guide')
+        .append('line')
+            .attr('x1', x1).attr('x2', x2)
+            .attr('y1', y1).attr('y2', y2)
+            .style('stroke', color)
+            .style('opacity', 0)
+            .style('pointer-events', 'none')
+        .transition().duration(200)
+            .style('opacity', this.opacity);
+        this.wrapper.append('text')
+            .attr('class', 'guide')
+            .attr('x', tx).attr('y', ty)
+            .style('stroke', color)
+            .style('fill', color)
+            .style('font-size', '14px')
+            .style('font-weight', '600')
+            .style('pointer-events', 'none')
+            .style('text-size-adjust', '100%')
+            .style('opacity', 0)
+            .style('text-anchor', 'middle')
+            .text(text)
+        .transition().duration(200)
+            .style('opacity', this.opacity);
+    }
+
     get contentWidth() { return this.width - this.margin.left - this.margin.right; }
     get contentHeight() { return this.height - this.margin.top - this.margin.bottom; }
 
-    render = (selection: Selection) => {
-        if (!this.data) { return; }
-        
-        this.svg = selection.append('svg')
+    renderImpl = () => {
+        this.svg = this.selection.append('svg')
             .attr('width', this.width)
             .attr('height', this.height);
 
@@ -159,7 +133,7 @@ export default class VoronoiChart<Datum> {
         // set the x-axis
         const xScale = d3.scaleLinear()
             .range([0, this.contentWidth])
-            .domain(d3.extent(this.data, d => this.selectors.x(d)) as [number, number])
+            .domain(d3.extent(this.nodes, n => n.x) as [number, number])
             .nice();
 
         const xAxis = d3.axisBottom(xScale).ticks(5);
@@ -174,7 +148,7 @@ export default class VoronoiChart<Datum> {
         // set the y-axis
         const yScale = d3.scaleLinear()
             .range([this.contentHeight, 0])
-            .domain(d3.extent(this.data, d => this.selectors.y(d)) as [number, number])
+            .domain(d3.extent(this.nodes, n => n.y) as [number, number])
             .nice();
 
         const yAxis = d3.axisLeft(yScale).ticks(6);
@@ -188,49 +162,49 @@ export default class VoronoiChart<Datum> {
         axis.selectAll('text').style('stroke', this.theme.color).style('font-size', '10px').style('font-weight', 400);
 
         const rScale = d3.scalePow().exponent(0.5)
-            .domain(d3.extent(this.data, d => this.selectors.y(d)) as [number, number])
+            .domain(d3.extent(this.nodes, n => n.r) as [number, number])
             .range([5, 12]);
     
         // voronoi
-        const voronoi = d3.voronoi<Datum>()
-            .x(d => xScale(this.selectors.x(d)))
-            .y(d => yScale(this.selectors.y(d)))
+        const voronoi = d3.voronoi<Node>()
+            .x(d => xScale(d.x))
+            .y(d => yScale(d.y))
             .extent([[0, 0], [this.contentWidth, this.contentHeight]]);
 
-        const voronoiDiagram = voronoi(this.data);
+        const voronoiDiagram = voronoi(this.nodes);
 
         this.wrapper.append('g')
             .selectAll('.clip')
             .data(voronoiDiagram.polygons())
             .enter().append('clipPath')
             .attr('class', 'clip')
-            .attr('id', d => d ? `clip-${this.selectors.id(d.data)}` : null)
+            .attr('id', d => d ? `clip-${d.data.id}` : null)
             .append('path')
             .attr('class', 'clip-path-circle')
             .attr('d', d => d ? 'M' + d.join(',') + 'Z' : null);
         
         this.wrapper.append('g').selectAll('.circles')
-            .data(this.data.sort((a, b) => d3.ascending(this.selectors.y(a), this.selectors.y(b))))
+            .data(this.nodes)
             .enter().append('circle')
-            .attr('class', d => `circles id-${this.selectors.id(d)}`)
+            .attr('class', d => `circles id-${d.id}`)
             .style('opacity', this.opacity)
-            .style('fill', d => this.color(this.selectors.category(d)))
-            .attr('cx', d => xScale(this.selectors.x(d)))
-            .attr('cy', d => yScale(this.selectors.y(d)))
-            .attr('r', d => rScale(this.selectors.r(d)));
+            .style('fill', d => this.color(d.category))
+            .attr('cx', d => xScale(d.x))
+            .attr('cy', d => yScale(d.y))
+            .attr('r', d => rScale(d.r));
             
         this.wrapper.append('g').selectAll('.circle-wrapper')
-            .data(this.data.sort((a, b) => d3.ascending(this.selectors.y(a), this.selectors.y(b))))
+            .data(this.nodes)
             .enter().append('circle')
-            .attr('class', d => `circle-wrapper id-${this.selectors.id(d)}`)
-            .attr('clip-path', d => `url(#clip-${this.selectors.id(d)})`)
-            .attr('cx', d => xScale(this.selectors.x(d)))
-            .attr('cy', d => yScale(this.selectors.y(d)))
+            .attr('class', d => `circle-wrapper id-${d.id}`)
+            .attr('clip-path', d => `url(#clip-${d.id})`)
+            .attr('cx', d => xScale(d.x))
+            .attr('cy', d => yScale(d.y))
             .style('fill', 'none')
             .attr('r', 50)
             .style('pointer-events', 'all')
-            .on('mouseover', this.showTooltip)
-            .on('mouseout', this.removeTooltip);
+            .on('mouseover', this.selectNode)
+            .on('mouseout', this.removeSelection);
 
         this.wrapper.append('g')
             .selectAll('path')

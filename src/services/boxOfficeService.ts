@@ -1,4 +1,4 @@
-import { BoxOffice } from '../commonTypes';
+import { BoxOfficeService } from '../commonTypes';
 
 // this is a box office information found on the various web sites
 // no way it is accurate but it is presented here for demonstration purposes
@@ -25,6 +25,6 @@ const predefinedBoxOffice = {
     'When Marnie Was There': 34.1,    
 };
 
-export default class BoxOfficeService implements BoxOffice {
-    grossRevenue = (title: string) => predefinedBoxOffice[title];
+export default class BoxOfficeServiceImpl implements BoxOfficeService {
+    grossRevenue = async (title: string) => predefinedBoxOffice[title];
 }

@@ -1,57 +1,57 @@
 import * as d3 from 'd3';
-import { Component, Theme, Selection } from './commonTypes';
+import { Component, Context, Size, Selection } from './commonTypes';
 
 export default class LoadingIndicator implements Component {
-    theme: Theme;
+    context: Context;
     selection: Selection;
-    width: number;
-    height: number;
+    size: Size;
 
-    constructor(selection: Selection,
-                width: number, height: number, theme: Theme) {
+    init(selection: Selection, size: Size, context: Context) {
         this.selection = selection;
-        this.width = width;
-        this.height = height;
-        this.theme = theme;
-    }
-    
-    resize(width: number, height: number): void {
-        if (this.width !== width || this.height !== height) {
-            this.width = width;
-            this.height = height;
+        this.size = size;
+        this.context = context;
 
+        this.render = this.renderImpl;
+        this.resize = this.resizeImpl;
+    }
+
+    render() { /* do nothing */ }
+    resize(size: Size) { /* do nothing */ }
+
+    resizeImpl(size: Size): void {
+        this.size = size;
+        if (this.selection) {
+            const half = [ size.width / 2, size.height / 2 ].map(Math.floor);
             this.selection.select('svg')
-                .attr('width', width)
-                .attr('height', height)
+                .attr('width', size.width)
+                .attr('height', size.height)
             .select('g')
-                .attr('transform', `translate(${Math.floor(width * 0.5)}, ${Math.floor(height * 0.5)})`);
+                .attr('transform', `translate(${half[0]}, ${half[1]})`);
         }
     }
 
-    render(): void {
-        this.selection.select('svg').remove();        
-        const svg = this.selection
-            .style('background', this.theme.background)
-            .style('border', `1px solid ${this.theme.color}`)
-        .append('svg')
-            .attr('width', this.width)
-            .attr('height', this.height)
+    renderImpl(): void {
+        this.selection.select('svg').remove();
+        const half = [ this.size.width / 2, this.size.height / 2 ].map(Math.floor);
+        const svg = this.selection.append('svg')
+            .attr('width', this.size.width)
+            .attr('height', this.size.height)
         .append('g')
-            .attr('transform', `translate(${Math.floor(this.width * 0.5)}, ${Math.floor(this.height * 0.5)})`);
+            .attr('transform', `translate(${half[0]}, ${half[1]})`);
 
         const numberOfBars = 10;
-        const barWidth = () => Math.max(1, Math.min(100, Math.floor(Math.min(this.width, this.height) 
-            / numberOfBars / 4)));
+        const barWidth = () => Math.max(1, Math.min(100, Math.floor(Math.min(
+            this.size.width, this.size.height) / numberOfBars / 4)));
         const size = () => barWidth() * numberOfBars;
         const barDelay = 100;
         const boxDelay = 1000;
         const duration = 1500;
 
         let count = 0;
-        const translateLeft = (x: number) => `translate(${-this.width / 2 - x - barWidth()})`;
-        const translateRight = (x: number) => `translate(${this.width / 2 - x})`;
+        const translateLeft = (x: number) => `translate(${-this.size.width / 2 - x - barWidth()})`;
+        const translateRight = (x: number) => `translate(${this.size.width / 2 - x})`;
         const getColor = () => d3.color(d3.schemeCategory10[(count + 1) % d3.schemeCategory10.length]);
-        const theme = () => this.theme;
+        const theme = () => this.context.theme;
 
         svg.selectAll('rect')
             .data(d3.range(numberOfBars)).enter()
