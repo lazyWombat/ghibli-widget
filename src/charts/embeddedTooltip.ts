@@ -104,4 +104,6 @@ export default class Tooltip {
         return `M${shift},0l${beakSize},${-vBeakSize}` + 
             `H${halfWidth}v${-boxHeight}H${-halfWidth}v${boxHeight}H${-beakSize + shift}Z`;
     }
+
+    updateBounds = (size: Size) => { this.bounds = size; };
 }
