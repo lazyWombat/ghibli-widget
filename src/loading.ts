@@ -1,4 +1,5 @@
 import * as d3 from 'd3';
+import { uniqueId } from 'lodash';
 import { Component, Context, Size, Selection } from './commonTypes';
 
 export default class LoadingIndicator implements Component {
@@ -31,14 +32,7 @@ export default class LoadingIndicator implements Component {
     }
 
     renderImpl(): void {
-        this.selection.select('svg').remove();
-        const half = [ this.size.width / 2, this.size.height / 2 ].map(Math.floor);
-        const svg = this.selection.append('svg')
-            .attr('width', this.size.width)
-            .attr('height', this.size.height)
-        .append('g')
-            .attr('transform', `translate(${half[0]}, ${half[1]})`);
-
+        const theme = () => this.context.theme;
         const numberOfBars = 10;
         const barWidth = () => Math.max(1, Math.min(100, Math.floor(Math.min(
             this.size.width, this.size.height) / numberOfBars / 4)));
@@ -46,14 +40,52 @@ export default class LoadingIndicator implements Component {
         const barDelay = 100;
         const boxDelay = 1000;
         const duration = 1500;
+        
+        this.selection.select('svg').remove();
+        const half = [ this.size.width / 2, this.size.height / 2 ].map(Math.floor);
+        const svg = this.selection.append('svg');
+        const gradientId = uniqueId('label-');
+        const blinkWidth = 60;
+        const gradient = svg.append('defs')
+            .append('linearGradient')
+            .attr('id', gradientId)
+            .attr('x1', '0').attr('x2', '100%')
+            .attr('y1', '0').attr('y2', '0');
+        gradient.append('stop')
+            .attr('stop-color', 'green')
+            .attr('offset', '0%');
+        gradient.append('stop')
+            .attr('stop-color', 'white')
+            .attr('offset', `${blinkWidth / 2}%`);
+        gradient.append('stop')
+            .attr('stop-color', 'green')
+            .attr('offset', `${blinkWidth}%`);
+        gradient.append('stop')
+            .attr('stop-color', 'green')
+            .attr('offset', '100%');
+        gradient.append('animate')
+            .attr('attributeName', 'x1')
+            .attr('values', `${-blinkWidth}%;${200 - blinkWidth}%;`)
+            .attr('dur', '1500ms')
+            .attr('repeatCount', 'indefinite');
+        gradient.append('animate')
+            .attr('attributeName', 'x2')
+            .attr('values', `${100 - blinkWidth}%;${300 - blinkWidth}%;`)
+            .attr('dur', '1500s')
+            .attr('repeatCount', 'indefinite');
+
+        const group = svg
+            .attr('width', this.size.width)
+            .attr('height', this.size.height)
+        .append('g')
+            .attr('transform', `translate(${half[0]}, ${half[1]})`);
 
         let count = 0;
         const translateLeft = (x: number) => `translate(${-this.size.width / 2 - x - barWidth()})`;
         const translateRight = (x: number) => `translate(${this.size.width / 2 - x})`;
-        const getColor = () => d3.color(d3.schemeCategory10[(count + 1) % d3.schemeCategory10.length]);
-        const theme = () => this.context.theme;
+        const getColor = () => d3.color(theme().colorScheme[(count + 1) % theme().colorScheme.length]);
 
-        svg.selectAll('rect')
+        group.selectAll('rect')
             .data(d3.range(numberOfBars)).enter()
             .append('rect')
             .transition()
@@ -69,7 +101,7 @@ export default class LoadingIndicator implements Component {
                             .attr('y', - size() / 2)
                             .attr('transform', translateLeft(x) + ' rotate(0)')
                             .attr('fill', theme().playDown(color, 3).toString())
-                            .attr('width', barWidth())
+                            .attr('width', barWidth() + 0.1)
                             .attr('height', size())
                         .transition()
                             .delay(d * barDelay)
@@ -94,24 +126,41 @@ export default class LoadingIndicator implements Component {
                             .on('start', repeat);
                     }
                 });
-                
-        svg.append('text')
-            .attr('text-anchor', 'middle')            
+
+        const fontSize = () => Math.max(12, size() / 3);
+        group.append('text')
+            .attr('text-anchor', 'middle')
+            .attr('fill', `url(#${gradientId})`)
+            .attr('font-size', `${fontSize()}px`)
+            .attr('y', size() / 2 + fontSize())
             .text('Loading')
-            .transition()
-                .on('start', function repeat(d: {}, index: number, texts: d3.BaseType[]) {
-                    const self = d3.select(texts[index]);
-                    if (self) {
-                        const fontSize = Math.max(10, size() / 3);
-                        self.transition()
-                            .duration(duration)
-                            .attr('y', size() / 2 + fontSize)
-                            .attr('font-size', `${fontSize}px`)
-                            .attr('fill', theme().highlight(getColor()).toString())
-                        .transition()
-                            .delay(boxDelay + duration + 2 * numberOfBars * barDelay)
-                            .on('start', repeat);
-                    }
-                });
+        .transition()
+            .on('start', function repeat(d: {}, index: number, texts: d3.BaseType[]) {
+                const self = d3.select(texts[index]);
+                if (self) {
+                    self.transition()
+                        .duration(duration)
+                        .attr('y', size() / 2 + fontSize())
+                        .attr('font-size', `${fontSize()}px`)
+                    .transition()
+                        .delay(boxDelay + duration + 2 * numberOfBars * barDelay)
+                        .on('start', repeat);
+                }
+            });
+
+        gradient.transition()
+            .on('start', function repeat(d: {}, index: number, elements: d3.BaseType[]) {
+                const self = d3.select(elements[index]);
+                if (self) {
+                    self.selectAll('stop')
+                        .transition().duration(duration)
+                        .attr('stop-color', (_, i) => i !== 1 
+                            ? theme().highlight(getColor()).toString() 
+                            : 'white');
+                    self.transition()
+                        .delay(2 * duration + boxDelay + 2 * numberOfBars * barDelay)
+                        .on('start', repeat);
+                }
+            });
     }
 }

@@ -56,7 +56,6 @@ export default class MultiCenterBubbleChart<Datum> implements Component {
         this.selector = selector;
         this.nodes = [];
         this.displayMode = DisplayMode.Center;
-        this.fillColor = d3.scaleOrdinal(d3.schemeCategory10);
     }
 
     init(selection: Selection, size: Size, context: Context) {
@@ -64,6 +63,7 @@ export default class MultiCenterBubbleChart<Datum> implements Component {
         this.selection = selection;
         this.width = size.width;
         this.height = size.height;
+        this.fillColor = d3.scaleOrdinal(context.theme.colorScheme);
         this.tooltip = new Tooltip(this.context.theme);
 
         this.render = this.renderImpl;

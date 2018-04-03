@@ -5,7 +5,7 @@ import { BoxOfficeService } from '../commonTypes';
 const predefinedBoxOffice = {
     'Castle in the Sky': 9.78,
     'Grave of the Fireflies': 5,
-    'My Neighbor Totoro': 5,
+    'My Neighbor Totoro': 8,
     'Kiki\'s Delivery Service': 18,
     'Only Yesterday': 25.6,
     'Porco Rosso': 34,

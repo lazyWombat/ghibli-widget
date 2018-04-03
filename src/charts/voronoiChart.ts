@@ -32,7 +32,6 @@ export default class VoronoiChart<Datum> implements Component {
 
     constructor(selectors: VoronoiSelector<Datum>) {
         this.selector = selectors;
-        this.color = d3.scaleOrdinal(d3.schemeCategory10);
         this.margin = { left: 60, top: 20, right: 20, bottom: 50 };
         this.opacity = 0.8;
         this.nodes = [];
@@ -43,6 +42,7 @@ export default class VoronoiChart<Datum> implements Component {
         this.width = size.width;
         this.height = size.height;
         this.context = context;
+        this.color = d3.scaleOrdinal(this.context.theme.colorScheme);
         this.tooltip = new Tooltip(context, size, this.margin);
         this.render = this.renderImpl;
         this.resize = this.resizeImpl;

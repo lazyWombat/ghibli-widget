@@ -24,6 +24,7 @@ export interface Theme {
     readonly tooltipColor: string;
     readonly tooltipBackground: string;
     readonly neutralColor: string;
+    readonly colorScheme: string[];
     highlight(color: d3.RGBColor | d3.HSLColor, k?: number): d3.RGBColor | d3.HSLColor;
     playDown(color: d3.RGBColor | d3.HSLColor, k?: number): d3.RGBColor | d3.HSLColor;
 }
