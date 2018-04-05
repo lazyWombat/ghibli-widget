@@ -53,13 +53,13 @@ export default class LoadingIndicator implements Component {
             .attr('y1', '0').attr('y2', '0');
         gradient.append('stop')
             .attr('stop-color', 'green')
-            .attr('offset', '0%');
+            .attr('offset', '-10%');
         gradient.append('stop')
             .attr('stop-color', 'white')
-            .attr('offset', `${blinkWidth / 2}%`);
+            .attr('offset', `${blinkWidth / 2 - 10}%`);
         gradient.append('stop')
             .attr('stop-color', 'green')
-            .attr('offset', `${blinkWidth}%`);
+            .attr('offset', `${blinkWidth - 10}%`);
         gradient.append('stop')
             .attr('stop-color', 'green')
             .attr('offset', '100%');
@@ -131,6 +131,7 @@ export default class LoadingIndicator implements Component {
         group.append('text')
             .attr('text-anchor', 'middle')
             .attr('fill', `url(#${gradientId})`)
+            .attr('font-family', 'sans-serif')
             .attr('font-size', `${fontSize()}px`)
             .attr('y', size() / 2 + fontSize())
             .text('Loading')
@@ -156,6 +157,11 @@ export default class LoadingIndicator implements Component {
                         .transition().duration(duration)
                         .attr('stop-color', (_, i) => i !== 1 
                             ? theme().highlight(getColor()).toString() 
+                            : 'white')
+                        .transition().duration(duration)
+                        .delay(boxDelay + 2 * numberOfBars * barDelay)
+                        .attr('stop-color', (_, i) => i !== 1 
+                            ? theme().color 
                             : 'white');
                     self.transition()
                         .delay(2 * duration + boxDelay + 2 * numberOfBars * barDelay)
