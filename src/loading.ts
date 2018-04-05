@@ -161,7 +161,7 @@ export default class LoadingIndicator implements Component {
                         .transition().duration(duration)
                         .delay(boxDelay + 2 * numberOfBars * barDelay)
                         .attr('stop-color', (_, i) => i !== 1 
-                            ? theme().color 
+                            ? theme().neutralColor 
                             : 'white');
                     self.transition()
                         .delay(2 * duration + boxDelay + 2 * numberOfBars * barDelay)
