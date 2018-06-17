@@ -33,3 +33,9 @@ Paste the script output into src/poster.ts file
 The typescript / webpack combo is taken from https://github.com/Microsoft/TypeScript-React-Starter
 
 All React libraries are thrown away to limit the size of the build.
+
+# Acknowledgments
+
+Special thanks to Facebook for the create-react-app bundle. Thanks to Microsoft to integrating typescript into it.
+
+This project uses free [Studio Ghibli API](https://ghibliapi.herokuapp.com).
