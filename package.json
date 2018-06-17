@@ -2,6 +2,8 @@
   "name": "ghibli-widget",
   "version": "0.1.0",
   "private": true,
+  "author": "Demid Sukhovsky",
+  "license": "MIT",
   "dependencies": {
     "@types/d3": "^4.12.0",
     "css-element-queries": "^1.0.1",
